@@ -33,10 +33,15 @@ class User extends CActiveRecord
 			'groups'=>array(self::HAS_MANY,'Group',array('group_id'=>'id'),'through'=>'roles'),
 			'mentorships'=>array(self::HAS_MANY,'Mentorship','teacher_id','joinType'=>'INNER JOIN'),
 			'students'=>array(self::HAS_MANY,'User',array('student_id'=>'id'),'through'=>'mentorships','joinType'=>'INNER JOIN'),
+			'profiles'=>array(self::HAS_MANY,'Profile','user_id'),
 			'posts'=>array(self::HAS_MANY,'Post','author_id'),
+			'postsCondition'=>array(self::HAS_MANY,'Post','author_id', 'condition'=>'postsCondition.id IN (2,3)'),
 			'postsOrderDescFormat1'=>array(self::HAS_MANY,'Post','author_id','scopes'=>'orderDesc'),
 			'postsOrderDescFormat2'=>array(self::HAS_MANY,'Post','author_id','scopes'=>array('orderDesc')),
 			'postCount'=>array(self::STAT,'Post','author_id'),
+			/* For {@link CActiveRecordTest::testHasManyThroughHasManyWithCustomSelect()}: */
+			'mentorshipsCustomSelect'=>array(self::HAS_MANY,'Mentorship','teacher_id','select' => array('teacher_id', 'student_id')),
+			'studentsCustomSelect'=>array(self::HAS_MANY,'User',array('student_id'=>'id'),'through'=>'mentorshipsCustomSelect','select' => array('id', 'username')),
 		);
 	}
 
@@ -95,6 +100,9 @@ class Group extends CActiveRecord
 			'users'=>array(self::HAS_MANY,'User',array('user_id'=>'id'),'through'=>'roles'),
 			'comments'=>array(self::HAS_MANY,'Comment',array('id'=>'author_id'),'through'=>'users'),
 			'description'=>array(self::HAS_ONE,'GroupDescription','group_id'),
+			/* Support for {@link CActiveRecordTest::testLazyLoadThroughRelationWithCondition()}: */
+			'rolesWhichEmptyByCondition'=>array(self::HAS_MANY,'Role','group_id','condition'=>'2=:compareValue','params'=>array(':compareValue'=>1)),
+			'usersWhichEmptyByCondition'=>array(self::HAS_MANY,'User',array('user_id'=>'id'),'through'=>'rolesWhichEmptyByCondition'),
 		);
 	}
 
@@ -136,6 +144,26 @@ class Role extends CActiveRecord
 	public function tableName()
 	{
 		return 'roles';
+	}
+}
+
+/**
+ * @property integer $id
+ * @property string $first_name
+ * @property string $last_name
+ * @property string $country
+ * @property integer $user_id
+ */
+class Profile extends CActiveRecord
+{
+	public static function model($class=__CLASS__)
+	{
+		return parent::model($class);
+	}
+
+	public function tableName()
+	{
+		return 'profiles';
 	}
 }
 
@@ -359,6 +387,8 @@ class Comment extends CActiveRecord
 		return array(
 			'post'=>array(self::BELONGS_TO,'Post','post_id'),
 			'author'=>array(self::BELONGS_TO,'User','author_id'),
+			'postAuthor'=>array(self::HAS_ONE,'User',array('author_id'=>'id'),'through'=>'post'),
+			'postAuthorBelongsTo'=>array(self::BELONGS_TO,'User',array('author_id'=>'id'),'through'=>'post'),
 		);
 	}
 

@@ -237,7 +237,7 @@ class CDbCommandBuilder extends CComponent
 			foreach($pks as $pk)
 			{
 				$fields[]=$table->getColumn($pk)->rawName;
-				$placeholders[]='NULL';
+				$placeholders[]=$this->getIntegerPrimaryKeyDefaultValue();
 			}
 		}
 		$sql="INSERT INTO {$table->rawName} (".implode(', ',$fields).') VALUES ('.implode(', ',$placeholders).')';
@@ -288,7 +288,7 @@ class CDbCommandBuilder extends CComponent
 			$templates
 		);
 		$this->ensureTable($table);
-		$tableName=$this->getDbConnection()->quoteTableName($table->name);
+		$tableName=$table->rawName;
 		$params=array();
 		$columnInsertNames=array();
 		$rowInsertValues=array();
@@ -858,5 +858,16 @@ class CDbCommandBuilder extends CComponent
 		if(is_string($table) && ($table=$this->_schema->getTable($tableName=$table))===null)
 			throw new CDbException(Yii::t('yii','Table "{table}" does not exist.',
 				array('{table}'=>$tableName)));
+	}
+
+	/**
+	 * Returns default value of the integer/serial primary key. Default value means that the next
+	 * autoincrement/sequence value would be used.
+	 * @return string default value of the integer/serial primary key.
+	 * @since 1.1.14
+	 */
+	protected function getIntegerPrimaryKeyDefaultValue()
+	{
+		return 'NULL';
 	}
 }
